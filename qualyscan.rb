@@ -16,6 +16,10 @@ rescue LoadError => load_error
 	report_error("[-] " + load_error.message + " Run bundle install first")
 end
 
+unless ARGV.length > 0
+	puts "Run qualyscan -h for help.\r\n\r\n"
+	exit!
+end
 
 @options = {}
 args = OptionParser.new do |opts|
