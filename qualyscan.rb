@@ -100,7 +100,7 @@ def launch_scan(session, qid, targets)
 	begin
 		response = http.post(uri.path, post, headers)
 		message = parse_xml(response.body)
-		unless message[:code] = ""
+		unless message[:code] == nil
 			logout(session)
 			report_error("[-] " + "Code: #{message[:code]} " + message[:text])
 		end
@@ -214,10 +214,10 @@ def parse_xml(blob)
 	# Helper method to check error codes 
 	message = {}
 	xml = Nokogiri::HTML(blob)
-	message[:code] = xml.css('code').text
-	message[:text] = xml.css('text').text
-	message[:scan_id] = xml.css('item')[0].css('value').text
-	message[:scan_reference] = xml.css('item')[1].css('value').text
+	message[:code] = xml.css('code')[0] ? xml.css('code').text : nil
+	message[:text] = xml.css('text')[0] ? xml.css('text').text : nil
+	message[:scan_id] = xml.css('item')[0] ? xml.css('item')[0].css('value').text : nil
+	message[:scan_reference] = xml.css('item')[1] ? xml.css('item')[1].css('value').text : nil
 	return message
 end
 
