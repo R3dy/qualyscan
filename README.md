@@ -26,7 +26,7 @@ Install Ruby Gems
         -v, --verbose                    Enables verbose output
 
 # Launch a new scan
-    $ ./miniscan.rb -q 45125 -s 106851 -t 192.168.1.10,192.168.2.10-16 -v
+    $ ./miniscan.rb -q 45125 -n appliance1 -t 192.168.1.10,192.168.2.10-16 -v
 
 # Check scan results
     $ ./qualyscan.rb -c scan/xxxx83298.77424
