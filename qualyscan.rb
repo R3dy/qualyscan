@@ -19,9 +19,9 @@ end
 
 @options = {}
 args = OptionParser.new do |opts|
-	opts.banner = "qualyscan.rb VERSION: 1.0.0 - UPDATED: 11/03/2015\r\n\r\n"
-	opts.banner += "Usage: ./miniscan.rb [options]\r\n\r\n"
-	opts.banner += "\texample: ./miniscan.rb -q 12345 -t 10.1.1.1,10.2.2.1-100\r\n\r\n"
+	opts.banner = "qualyscan.rb VERSION: 1.0.0 - UPDATED: 11/04/2015\r\n\r\n"
+	opts.banner += "Usage: ./qualyscan.rb [options]\r\n\r\n"
+	opts.banner += "\texample: ./qualyscan.rb -q 12345 -t 10.1.1.1,10.2.2.1-100\r\n\r\n"
 	opts.on("-q", "--qid [Qualys ID]", "The specific QID you wish to check for") { |qid| @options[:qid] = qid.to_i }
 	opts.on("-s", "--sid [Scanner ID]", "The Scanner appliance ID") { |sid| @options[:scanner_id] = sid }
 	opts.on("-n", "--name [Scanner name]", "The Scanner appliance name") { |name| @options[:scanner_name] = name }
@@ -42,7 +42,7 @@ def login(creds={})
 	post = "action=login&" +
 		"username=#{creds[:username]}&" +
 		"password=#{creds[:password]}"
-	headers['X-Requested-With'] = "miniscan"
+	headers['X-Requested-With'] = "qualyscan"
 	begin
 		response = http.post(uri.path, post, headers)
 		if response.body.include? ('Logged in')
@@ -53,7 +53,7 @@ def login(creds={})
 			exit!
 		end
 	rescue NoMethodError => login_error
-		report_error(login_error.message + " Run ./miniscan.rb -h for help")
+		report_error(login_error.message + " Run ./qualyscan.rb -h for help")
 	end
 end
 
@@ -104,7 +104,7 @@ def launch_scan(session, qid, targets)
 			return message[:scan_reference]
 		end
 	rescue NoMethodError => login_error
-		report_error("[-] " + login_error.message + " Run ./miniscan.rb -h for help")
+		report_error("[-] " + login_error.message + " Run ./qualyscan.rb -h for help")
 	end
 end
 
@@ -125,7 +125,7 @@ def check_scan_status(session, reference)
 		xml = Nokogiri::HTML(response.body)
 		state = {}
 		state[:status] = xml.css('state').text
-		state[:qid] = response.body.split('[QID-')[1].split(' ')[0]
+		state[:qid] = response.body.split('[QID-')[1] ? response.body.split('[QID-')[1].split(' ')[0] : 0
 		return state
 	rescue
 	end
@@ -265,7 +265,7 @@ end
 def set_headers(session)
 	# Specifies headers to use on HTTP requests
 	headers = {}
-	headers['X-Requested-With'] = "miniscan"
+	headers['X-Requested-With'] = "qualyscan"
 	headers['Cookie'] = session
 	return headers
 end
@@ -279,7 +279,7 @@ if @options[:qid]
 	else
 		if !@options[:targets]
 			# -t was not provided and script dies
-			report_error("[-] You must specify a list of targets.  Run ./miniscan.rb -h for help")
+			report_error("[-] You must specify a list of targets.  Run ./qualyscan.rb -h for help")
 		else
 			session = login(credential_prompt)
 			reference = launch_scan(session, @options[:qid], @options[:targets])
@@ -296,11 +296,11 @@ if @options[:scan_ref]
 	status = check_scan_status(session, @options[:scan_ref])
 	if status
 		puts "[*] Current status is: " + status[:status] 
-	end
-	if status[:status] == "Finished"
-		# if the scan is finished we should just grab the results
-		results = get_scan_results(session, @options[:scan_ref])
-		print_results(results, status[:qid])
+		if status[:status] == "Finished"
+			# if the scan is finished we should just grab the results
+			results = get_scan_results(session, @options[:scan_ref])
+			print_results(results, status[:qid])
+		end
 	end
 	logout(session)
 end
