@@ -24,6 +24,7 @@ args = OptionParser.new do |opts|
 	opts.banner += "\texample: ./miniscan.rb -q 12345 -t 10.1.1.1,10.2.2.1-100\r\n\r\n"
 	opts.on("-q", "--qid [Qualys ID]", "The specific QID you wish to check for") { |qid| @options[:qid] = qid.to_i }
 	opts.on("-s", "--sid [Scanner ID]", "The Scanner appliance ID") { |sid| @options[:scanner_id] = sid }
+	opts.on("-n", "--name [Scanner name]", "The Scanner appliance name") { |name| @options[:scanner_name] = name }
 	opts.on("-c", "--check [Scan Reference]", "Scan Reference from launched scan") { |scan_ref| @options[:scan_ref] = scan_ref }
 	opts.on("-t", "--targets [Scan Targets]", "Comma delimited list of IP Addresses/Ranges") { |targets| @options[:targets] = targets }
 	opts.on("-v", "--verbose", "Enables verbose output\r\n\r\n") { |v| @options[:verbose] = true }
@@ -35,13 +36,12 @@ def login(creds={})
 	# takes a hash of credentials and makes a post
 	# returns a string with the Qualys session cookies
 	puts "[*] Attempting to authenticate to Qualys Guard.\r\n"
-	post = ""
 	headers = {}
 	uri = get_qualys_uri('session')
 	http = setup_http(uri)
-	post << "action=login&"
-	post << "username=#{creds[:username]}&"
-	post << "password=#{creds[:password]}"
+	post = "action=login&" +
+		"username=#{creds[:username]}&" +
+		"password=#{creds[:password]}"
 	headers['X-Requested-With'] = "miniscan"
 	begin
 		response = http.post(uri.path, post, headers)
@@ -77,20 +77,22 @@ def launch_scan(session, qid, targets)
 	# tries to launch a scan targeting the specified hosts
 	# if all goes well should return a scan reference
 	puts "[*] Attempting to launch scan on specified targets.\r\n"
-	post = ""
 	headers = set_headers(session)
 	uri = get_qualys_uri('scan')
 	http = setup_http(uri)
 	ips = split_range(targets)
-	post << "action=launch&" +
-		"scan_title=QID-#{qid}+miniscan&"
-		if @options[:scanner_id]
-			post << "iscanner_id=#{@options[:scanner_id]}&"
-		else
-			post << "default_scanner=1&"
-		end
-	post << "option_title=miniscan&" +
+	post = "action=launch&" +
+		"scan_title=QID-#{qid}+miniscan&" +
+		"option_title=miniscan&" +
 		"ip=#{ips}&"
+	scanner_id = get_scanner_id(session, @options[:scanner_name]) if @options[:scanner_name]
+	if @options[:scanner_name]
+		post << "iscanner_id=#{scanner_id}&"
+	elsif @options[:scanner_id]
+		post << "iscanner_id=#{@options[:scanner_id]}&"
+	else
+		post << "default_scanner=1&"
+	end
 	begin
 		response = http.post(uri.path, post, headers)
 		message = parse_xml(response.body)
@@ -157,6 +159,23 @@ def get_scan_results(session, reference)
 end
 
 
+def get_scanner_id(session, name)
+	# tries to turn a scanner name into a scanner id
+	post = ""
+	headers = set_headers(session)
+	uri = get_qualys_uri('appliance')
+	http = setup_http(uri)
+	post << "action=list"
+	response = http.post(uri.path, post, headers)
+	appliances = parse_appliance_list(response.body)
+	appliances.each { |app| 
+		if app[:name].include? name.downcase
+			return app[:id]
+		end
+	}
+end
+
+
 def print_results(results, qid)
 	# processes the results from a scan and prints out
 	# hosts that are still vulnerable
@@ -167,12 +186,25 @@ def print_results(results, qid)
 		end
 	end
 	if vulnerable_hosts.size > 0
-		vulnerable_hosts.each { |host| puts "[-] #{host} still vulnerable to #{qid}"}
+		vulnerable_hosts.each { |host| puts "[-] #{host} still vulnerable to QID: #{qid}"}
 	else
-		puts "[+] No hosts vulnerable to #{qid}"
+		puts "[+] No hosts vulnerable to QID: #{qid}"
 	end
 end
 
+
+def parse_appliance_list(blob)
+	# Helper method to parse list of appliances
+	xml = Nokogiri::HTML(blob)
+	appliances = []
+	xml.css('appliance').each do |appliance|
+		scanner = {}
+		scanner[:name] = appliance.css('name').text.downcase
+		scanner[:id] = appliance.css('id').text
+		appliances << scanner
+	end
+	return appliances
+end
 
 def parse_xml(blob)
 	# Helper method to check error codes 
