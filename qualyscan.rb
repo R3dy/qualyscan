@@ -23,7 +23,7 @@ end
 
 @options = {}
 args = OptionParser.new do |opts|
-	opts.banner = "qualyscan.rb VERSION: 1.0.0 - UPDATED: 11/04/2015\r\n\r\n"
+	opts.banner = "qualyscan.rb VERSION: 1.0.1 - UPDATED: 11/06/2015\r\n\r\n"
 	opts.banner += "Usage: ./qualyscan.rb [options]\r\n\r\n"
 	opts.banner += "\texample: ./qualyscan.rb -q 12345 -t 10.1.1.1,10.2.2.1-100\r\n\r\n"
 	opts.on("-q", "--qid [Qualys ID]", "The specific QID you wish to check for") { |qid| @options[:qid] = qid.to_i }
@@ -214,8 +214,13 @@ def parse_xml(blob)
 	# Helper method to check error codes 
 	message = {}
 	xml = Nokogiri::HTML(blob)
-	message[:code] = xml.css('code')[0] ? xml.css('code').text : nil
-	message[:text] = xml.css('text')[0] ? xml.css('text').text : nil
+	if xml.css('return').attr('status')
+		message[:code] = xml.css('return').attr('number').text
+		message[:text] = xml.css('return').children.first.text.lstrip.rstrip if message[:code] == '999'
+	else
+		message[:code] = xml.css('code')[0] ? xml.css('code').text : nil
+		message[:text] = xml.css('text')[0] ? xml.css('text').text : nil
+	end
 	message[:scan_id] = xml.css('item')[0] ? xml.css('item')[0].css('value').text : nil
 	message[:scan_reference] = xml.css('item')[1] ? xml.css('item')[1].css('value').text : nil
 	return message
