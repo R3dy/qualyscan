@@ -6,7 +6,7 @@ Currently works with Ruby 2.2.1p85 installed via RVM
 
 Install RVM
 
-        $\curl -sSL https://get.rvm.io | bash -s stable --ruby
+    $\curl -sSL https://get.rvm.io | bash -s stable --ruby
 
 Install Ruby Gems
 
