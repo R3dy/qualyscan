@@ -14,11 +14,11 @@ Install Ruby Gems
 
 # Help
     $ ./qualyscan.rb -h
-    qualyscan.rb VERSION: 1.0.0 - UPDATED: 11/03/2015
+    qualyscan.rb VERSION: 1.0.1 - UPDATED: 11/06/2015
 
-    Usage: ./miniscan.rb [options]
+    Usage: ./qualyscan.rb [options]
 
-        example: ./miniscan.rb -q 12345 -t 10.1.1.1,10.2.2.1-100
+        example: ./qualyscan.rb -q 12345 -t 10.1.1.1,10.2.2.1-100
 
         -q, --qid [Qualys ID]            The specific QID you wish to check for
         -s, --sid [Scanner ID]           The Scanner appliance ID
