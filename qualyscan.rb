@@ -36,6 +36,7 @@ end
 args.parse!(ARGV)
 
 
+# These methods interact directly with the API
 def login(creds={})
 	# takes a hash of credentials and makes a post
 	# returns a string with the Qualys session cookies
@@ -180,6 +181,7 @@ def get_scanner_id(session, name)
 end
 
 
+# These methods are suplimental "helper" methods
 def print_results(results, qid)
 	# processes the results from a scan and prints out
 	# hosts that are still vulnerable
@@ -280,6 +282,7 @@ def set_headers(session)
 end
 
 
+# These blocks are the primary drivers of the application
 if @options[:qid]
 	# if the user supplies a QID that means they are launching a scan
 	if @options[:qid].to_s.size > 6 || @options[:qid].to_s.size < 2
